@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gacha Waifu</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111827;
+    color: #f9fafb;
+    margin: 0;
+  }
+  header {
+    background: #1f2937;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+  header button {
+    background: none;
+    border: none;
+    color: #f9fafb;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px 12px;
+  }
+  header button.active {
+    background: #2563eb;
+    border-radius: 6px;
+  }
+  section {
+    display: none;
+    padding: 20px;
+    text-align: center;
+  }
+  section.active { display: block; }
+
+  /* Gacha result */
+  #result img {
+    width: 200px;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: box-shadow 0.5s;
+  }
+  .glow {
+    box-shadow: 0 0 25px 10px gold;
+  }
+
+  /* Buttons */
+  .btn {
+    background: #2563eb;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+    margin: 5px;
+  }
+  .reset { background: #6b7280; }
+
+  /* Koleksi grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .collect-card {
+    background: #1f2937;
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .collect-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .star {
+    display: inline-block;
+    background: #facc15;
+    color: #000;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .age {
+    font-size: 12px;
+    color: #d1d5db;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <button data-page="home" class="active">Home</button>
+    <button data-page="gacha">Gacha</button>
+    <button data-page="koleksi">Koleksi</button>
+  </header>
+
+  <!-- Home -->
+  <section id="home" class="active">
+    <h1>Selamat datang di Gacha Waifu</h1>
+    <p>Pilih menu <b>Gacha</b> untuk memulai spin, dan lihat hasilmu di menu <b>Koleksi</b>.</p>
+  </section>
+
+  <!-- Gacha -->
+  <section id="gacha">
+    <h2>Gacha 1x per Spin</h2>
+    <div id="result">
+      <p>Hasil gacha akan muncul di sini</p>
+    </div>
+    <button id="spinBtn" class="btn">Spin</button>
+    <button id="resetBtn" class="btn reset">Reset Koleksi</button>
+  </section>
+
+  <!-- Koleksi -->
+  <section id="koleksi">
+    <h2>Koleksi</h2>
+    <div id="collectionGrid" class="grid"></div>
+  </section>
+
+<script>
+const spinBtn = document.getElementById("spinBtn");
+const resetBtn = document.getElementById("resetBtn");
+const result = document.getElementById("result");
+const collectionGrid = document.getElementById("collectionGrid");
+
+// Koleksi player
+let collection = {};
+
+// daftar karakter contoh
+const pool = [
+  {name:"Zani", star:4, age:"25", img:"zani20.jpg"},
+  {name:"Emi", star:5, age:"33", img:"Emi33.jpg"},
+  {name:"Aoi", star:3, age:"18", img:"Aoi18.jpg"},
+  {name:"Risa", star:5, age:"33", img:"Risa33.jpg"},
+  {name:"Elfie", star:100, age:"Elf", img:"elfie300.jpg"},
+];
+
+// fungsi pilih acak dengan probabilitas
+function pickGacha() {
+  const rand = Math.random() * 100;
+  if (rand < 10) return pool.find(p=>p.star===100); // 10% elf
+  if (rand < 25) return pool.find(p=>p.star===5);   // 15% bintang 5
+  if (rand < 45) return pool.find(p=>p.star===4);   // 20% bintang 4
+  return pool.find(p=>p.star===3);                  // 55% bintang 3
+}
+
+function updateCollection() {
+  collectionGrid.innerHTML = "";
+  Object.values(collection).forEach(item => {
+    const div = document.createElement("div");
+    div.className = "collect-card";
+    div.innerHTML = `
+      <img src="${item.img}" alt="${item.name}">
+      <div><strong>${item.name}</strong></div>
+      <div class="star">${item.star === 100 ? "⭐100" : item.star+"★"} (${item.count}x)</div>
+      <div class="age">Umur: ${item.age}</div>
+    `;
+    collectionGrid.appendChild(div);
+  });
+}
+
+// tombol spin → animasi rolling
+spinBtn.addEventListener("click", () => {
+  let counter = 0;
+  const spinInterval = setInterval(() => {
+    const temp = pool[Math.floor(Math.random() * pool.length)];
+    result.innerHTML = `
+      <img src="${temp.img}" alt="${temp.name}">
+      <p><strong>${temp.name}</strong> — ${temp.star === 100 ? "⭐100" : temp.star+"★"} (${temp.age})</p>
+    `;
+    counter++;
+    if (counter > 15) { // setelah 15 gambar berhenti
+      clearInterval(spinInterval);
+      const chosen = pickGacha();
+      result.innerHTML = `
+        <img src="${chosen.img}" alt="${chosen.name}" class="${chosen.star>=5?'glow':''}">
+        <p><strong>${chosen.name}</strong> — ${chosen.star === 100 ? "⭐100" : chosen.star+"★"} (${chosen.age})</p>
+      `;
+      if (collection[chosen.name]) {
+        collection[chosen.name].count++;
+      } else {
+        collection[chosen.name] = {...chosen, count:1};
+      }
+      updateCollection();
+    }
+  }, 100);
+});
+
+// reset koleksi
+resetBtn.addEventListener("click", () => {
+  result.innerHTML = "<p>Hasil gacha akan muncul di sini</p>";
+  collection = {};
+  updateCollection();
+});
+
+// Navigasi antar halaman
+const navButtons = document.querySelectorAll("header button");
+const sections = document.querySelectorAll("section");
+
+navButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    navButtons.forEach(b => b.classList.remove("active"));
+    sections.forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.page).classList.add("active");
+  });
+});
+</script>
+</body>
+</html0
